@@ -1,3 +1,0 @@
-[submodule "lsd"]
-	path = lsd
-	url = https://github.com/fkluger/lsd-python.git
