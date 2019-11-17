@@ -208,15 +208,19 @@ if __name__ == "__main__":
     parser.add_argument('--runs', type=int, default=1, help='number of runs')
     parser.add_argument('--dataset', type=str, default="yud", help='dataset to use')
     parser.add_argument('--dataset_path', type=str, default="/tnt/data/scene_understanding/YUD", help='path to dataset')
-    parser.add_argument('--tlinkage', dest='tlinkage', action='store_true', help='', default=False)
-    parser.add_argument('--plot_recall', dest='plot_recall', action='store_true', help='', default=False)
-    parser.add_argument('--plot_results', dest='plot_results', action='store_true', help='', default=False)
+    parser.add_argument('--tlinkage', dest='tlinkage', action='store_true',
+                        help='use T-Linkage instead of J-Linkage',
+                        default=False)
+    parser.add_argument('--plot_recall', dest='plot_recall', action='store_true',
+                        help='Plot recall curves of all runs', default=False)
+    parser.add_argument('--plot_results', dest='plot_results', action='store_true',
+                        help='Visualise results for every image', default=False)
     opt = parser.parse_args()
 
     if opt.dataset == 'yud':
         dataset = yud.YUDVP(opt.dataset_path, split='test', return_images=True)
     else:
-        assert(False, "unknown dataset")
+        assert False, "unknown dataset"
 
     colourmap = plt.get_cmap('jet')
 

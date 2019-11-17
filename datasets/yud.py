@@ -3,7 +3,7 @@ import os
 import numpy as np
 import scipy.io
 import imageio
-import lsd
+from lsd import lsd
 
 
 def rgb2gray(rgb):
