@@ -1,6 +1,6 @@
 import numpy as np
-from datasets import yud
-
+from datasets.yud_plus.yud import YUDVP
+from datasets.nyu_vp.nyu import NYUVP
 
 def get_line_segments_from_indices(line_segments, indices):
     sampled_lines = line_segments[indices,:]
@@ -175,7 +175,10 @@ def tlinkage_clustering(preference_mat):
 
         for i in range(num_clusters):
             for j in range(i):
-                distance = 1 - preference_mat_selfprod[i,j] / (preference_mat_selfprod[i,i] + preference_mat_selfprod[j,j] - preference_mat_selfprod[i,j])
+                distance = 1 - preference_mat_selfprod[i,j] / \
+                           np.maximum((preference_mat_selfprod[i,i] +
+                                       preference_mat_selfprod[j,j] -
+                                       preference_mat_selfprod[i,j]), 1e-8)
 
                 if distance < smallest_distance:
                     keep_clustering = True
@@ -203,11 +206,12 @@ if __name__ == "__main__":
     import util.evaluation
 
     parser = argparse.ArgumentParser(description='', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--hyps', type=int, default=100, help='number of hypotheses')
+    parser.add_argument('--hyps', type=int, default=1000, help='number of hypotheses')
     parser.add_argument('--threshold', '-t', type=float, default=0.001, help='inlier threshold')
     parser.add_argument('--runs', type=int, default=1, help='number of runs')
     parser.add_argument('--dataset', type=str, default="yud", help='dataset to use')
-    parser.add_argument('--dataset_path', type=str, default="/tnt/data/scene_understanding/YUD", help='path to dataset')
+    parser.add_argument('--dataset_path', type=str, default="./datasets/yud_plus/data", help='path to dataset')
+    parser.add_argument('--mat_file_path', type=str, default="", help='path to .mat file for NYU')
     parser.add_argument('--tlinkage', dest='tlinkage', action='store_true',
                         help='use T-Linkage instead of J-Linkage',
                         default=False)
@@ -218,7 +222,11 @@ if __name__ == "__main__":
     opt = parser.parse_args()
 
     if opt.dataset == 'yud':
-        dataset = yud.YUDVP(opt.dataset_path, split='test', return_images=True)
+        dataset = YUDVP(opt.dataset_path, split='test', return_images=True, yudplus=False)
+    elif opt.dataset == 'yud+':
+        dataset = YUDVP(opt.dataset_path, split='test', return_images=True, yudplus=True)
+    elif opt.dataset == 'nyu':
+        dataset = NYUVP(opt.dataset_path, split='test', mat_file_path=opt.mat_file_path)
     else:
         assert False, "unknown dataset"
 
@@ -304,8 +312,15 @@ if __name__ == "__main__":
             estimated_vps = np.vstack(estimated_vps)
             estimated_vps = estimated_vps[sorting]
             true_vps = dataset[idx]['VPs']
-            errors, missing_vps = util.evaluation.single_eval(dataset.K_inv, true_vps,
-                                                              estimated_vps[0:true_vps.shape[0]])
+
+            if "yud" in opt.dataset:
+                errors, missing_vps, _ = util.evaluation.single_eval_yud(dataset.K_inv, true_vps,
+                                                                      estimated_vps[0:true_vps.shape[0]])
+            else:
+                errors, missing_vps, _, _ = util.evaluation.single_eval_nyu(true_vps,
+                                                                            estimated_vps[0:true_vps.shape[0]],
+                                                                            normalised_coords=False)
+
             all_missing_vps += [missing_vps]
             print("errors: ", errors)
             all_errors += errors
